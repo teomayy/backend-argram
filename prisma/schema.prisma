@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name      String?
+  password  String
+  phone     String  @unique
+  publicKey String  @map("public_key") //Открытый ключ для E2E-шифрования
+
+  workInterval  Int? @default(50) @map("word_interval")
+  breakInterval Int? @default(10) @map("break_interval")
+  intervalCount Int? @default(7) @map("interval_count")
+
+  task             Task[]
+  timeBlocks       TimeBlock[]
+  pomodoroSessions PomodoroSession[]
+  chats            UserChat[]
+  messages         Message[]
+  reactions        MessageReaction[]
+
+  @@map("user")
+}
+
+model Chat {
+  id        String            @id @default(cuid())
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  name      String? //Название (только для групп)
+  isGroup   Boolean           @default(false) @map("is_group")
+  members   UserChat[]
+  messages  Message[]
+  reactions MessageReaction[]
+  Task      Task[]
+
+  @@map("chat")
+}
+
+model UserChat {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id")
+  chatId    String   @map("chat_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatId]) //Запрещаем дублирование
+  @@map("user_chat")
+}
+
+model Message {
+  id            String              @id @default(cuid())
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  chatId        String              @map("chat_id")
+  senderId      String              @map("sender_id")
+  encryptedText String              @map("encrypted_text") //Шифрованное сообщение (AES)
+  encryptedKey  String              @map("encrypted_key") //Зашифрованный AES-ключ (RSA)
+  attachments   MessageAttachment[]
+  reactions     MessageReaction[]
+
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("message")
+}
+
+model MessageAttachment {
+  id        String         @id @default(cuid())
+  messageId String         @map("message_id")
+  fileUrl   String         @map("file_url") // URL файла в Firebase Storage
+  fileType  AttachmentType @default(image) @map("file_type")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachment")
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name        String
+  priority    Priority?
+  isCompleted Boolean?  @default(false) @map("is_completed")
+
+  // Задача может принадлежать либо пользователю, либо групповому чату
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @map("user_id")
+
+  chat   Chat?   @relation(fields: [chatId], references: [id])
+  chatId String? @map("chat_id")
+
+  @@map("task")
+}
+
+model TimeBlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name     String
+  color    String?
+  duration Int
+  order    Int     @default(1)
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+
+  @@map("time_block")
+}
+
+model PomodoroSession {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  isCompleted Boolean? @default(false) @map("is_completed")
+
+  user   User            @relation(fields: [userId], references: [id])
+  userId String          @map("user_id")
+  rounds PomodoroRound[]
+
+  @@map("pomodoro_session")
+}
+
+model PomodoroRound {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  totalSeconds Int      @map("total_seconds")
+  isCompleted  Boolean? @default(false) @map("is_completed")
+
+  pomodoroSession   PomodoroSession @relation(fields: [pomodoroSessionId], references: [id], onDelete: Cascade)
+  pomodoroSessionId String          @map("pomodoro_session_id")
+
+  @@map("pomodoro_round")
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum AttachmentType {
+  image
+  video
+  audio
+  file
+}
+
+model MessageReaction {
+  id        String @id @default(cuid())
+  messageId String @map("message_id")
+  userId    String @map("user_id")
+  emoji     String
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Chat    Chat?   @relation(fields: [chatId], references: [id])
+  chatId  String? @map("chat_id")
+
+  @@unique([messageId, userId]) // Один пользователь может поставить одну реакцию
+  @@map("message_reaction")
+}
