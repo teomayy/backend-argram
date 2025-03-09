@@ -27,7 +27,7 @@ model User {
   breakInterval Int? @default(10) @map("break_interval")
   intervalCount Int? @default(7) @map("interval_count")
 
-  task             Task[]
+  tasks            Task[]
   timeBlocks       TimeBlock[]
   pomodoroSessions PomodoroSession[]
   chats            UserChat[]
@@ -46,7 +46,7 @@ model Chat {
   members   UserChat[]
   messages  Message[]
   reactions MessageReaction[]
-  Task      Task[]
+  tasks     Task[]
 
   @@map("chat")
 }

@@ -1,1 +1,4 @@
-export class CreateAuthDto {}
+export class CreateAuthDto {
+	phone: string
+	passport: string
+}
