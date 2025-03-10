@@ -83,9 +83,11 @@ model UserChat {
 }
 
 model Message {
-  id            String              @id @default(cuid())
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  firestoreId   String?             @map("firestore_id")
   chatId        String              @map("chat_id")
   senderId      String              @map("sender_id")
   encryptedText String              @map("encrypted_text") //Шифрованное сообщение (AES)
