@@ -19,7 +19,9 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   name      String?
-  password  String
+  avatarUrl String? @map("avatar_url")
+  status    String? @default("Hey there! I'm using ArGram")
+  password  String  @default("")
   phone     String  @unique
   publicKey String  @map("public_key") //Открытый ключ для E2E-шифрования
 
@@ -33,6 +35,8 @@ model User {
   chats            UserChat[]
   messages         Message[]
   reactions        MessageReaction[]
+  outgoingCalls    Call[]            @relation("Caller")
+  incomingCalls    Call[]            @relation("Receiver")
 
   @@map("user")
 }
@@ -49,6 +53,19 @@ model Chat {
   tasks     Task[]
 
   @@map("chat")
+}
+
+model Call {
+  id         String    @id @default(cuid())
+  callerId   String
+  receiverId String
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+
+  caller   User @relation(fields: [callerId], references: [id], name: "Caller")
+  receiver User @relation(fields: [receiverId], references: [id], name: "Receiver")
+
+  @@map("call")
 }
 
 model UserChat {
