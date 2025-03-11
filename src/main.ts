@@ -4,15 +4,16 @@ import { AppModule } from './app.module'
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule)
+	app.use(cookieParser())
 
 	app.setGlobalPrefix('api')
-	app.use(cookieParser())
 	app.enableCors({
-		origin: ['http://localhost:3000 '],
+		origin: '*',
 		credentials: true,
 		exposedHeaders: 'set-cookie'
 	})
 
 	await app.listen(4500)
+	console.log('🚀 HTTP Server running on http://localhost:4500')
 }
 bootstrap()

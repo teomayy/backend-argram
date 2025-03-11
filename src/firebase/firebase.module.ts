@@ -33,6 +33,7 @@ const firebaseProvider = {
 @Module({
 	imports: [ConfigModule],
 	controllers: [FirebaseController],
-	providers: [FirebaseService, firebaseProvider]
+	providers: [FirebaseService, firebaseProvider],
+	exports: [FirebaseService]
 })
 export class FirebaseModule {}
